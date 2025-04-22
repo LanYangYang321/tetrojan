@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Screenshot</title>
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <style>
+    /* 略，同上 */
+  </style>
+</head>
+<body>
+  <h1>Screenshot for Client: <span id="clientId"></span></h1>
+  <div class="screenshot" id="screenshotDiv">
+    <p>No screenshot available yet.</p>
+  </div>
+  <div class="menu">
+    <button onclick="sendScreenshot()">Send Screenshot</button>
+    <a href="/admin/clients">Client List</a> |
+    <a id="cmdLink">Cmd</a>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const clientId = urlParams.get("clientid");
+    if (!clientId) alert("Missing clientid parameter");
+    document.getElementById("clientId").innerText = clientId;
+    document.getElementById("cmdLink").href = "/admin/cmd?clientid=" + encodeURIComponent(clientId);
+
+    function sendScreenshot() {
+      fetch("/api/admin/screenshot", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientid: clientId })
+      })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        if (data.status==="success") {
+          alert("Screenshot command sent.");
+          pollScreenshot();
+        } else {
+          alert("Error: " + data.message);
+        }
+      })
+      .catch(e => alert("Request error: " + e));
+    }
+
+    function pollScreenshot() {
+      fetch(`/api/admin/screenshot?clientid=${encodeURIComponent(clientId)}`, {
+        credentials: "include"
+      })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        if (data.status==="success" && data.data.filename) {
+          document.getElementById("screenshotDiv").innerHTML =
+            `<img src="/static/${data.data.filename}" style="max-width:100%;">`;
+        } else {
+          setTimeout(pollScreenshot, 1000);
+        }
+      })
+      .catch(e => {
+        document.getElementById("screenshotDiv").innerHTML =
+          `<p class="msg">Poll error: ${e}</p>`;
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      pollScreenshot();
+    });
+  </script>
+</body>
+</html>

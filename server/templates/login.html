@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>登录</title>
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 50px; }
+    .login-container { width: 300px; margin: auto; }
+    input[type="text"], input[type="password"] { width: 100%; padding: 8px; margin: 5px 0; }
+    input[type="submit"] { width: 100%; padding: 8px; margin-top: 10px; }
+    .error { color: red; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2>登录</h2>
+    <form id="loginForm">
+      <input type="text" id="username" name="username" placeholder="用户名" required>
+      <input type="password" id="password" name="password" placeholder="密码" required>
+      <input type="submit" value="登录">
+    </form>
+    <div class="error" id="errorMsg"></div>
+  </div>
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      var username = document.getElementById("username").value;
+      var password = document.getElementById("password").value;
+
+      fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username: username, password: password })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === "success") {
+          window.location.href = "/admin/clients"; // 登录成功跳转
+        } else {
+          document.getElementById("errorMsg").innerText = data.message || "登录失败";
+        }
+      })
+      .catch(() => {
+        document.getElementById("errorMsg").innerText = "登录请求失败";
+      });
+    });
+  </script>
+</body>
+</html>

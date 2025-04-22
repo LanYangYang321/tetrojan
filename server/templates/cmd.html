@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Admin - Client CMD</title>
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <style>
+      body { font-family: monospace; width: 80%; margin: auto; background: #f7f7f7; }
+      h1 { text-align: center; }
+      #cmd_output { background: #000; color: #0f0; padding: 10px; height: 400px; overflow-y: scroll; white-space: pre-wrap; border: 1px solid #333; }
+      .command-form { text-align: center; margin-top: 20px; }
+      .command-form input[type="text"] { width: 70%; padding: 8px; }
+      .command-form input[type="button"] { padding: 8px 16px; margin: 0 10px; }
+      .menu { text-align: center; margin-top: 20px; }
+      .menu a { text-decoration: none; color: #337ab7; margin: 0 10px; }
+  </style>
+</head>
+<body>
+  <h1 id="pageTitle">Client CMD: </h1>
+  <div id="cmd_output">加载中...</div>
+  <div class="command-form">
+    <input type="text" id="cmd_input" placeholder="Enter command here">
+    <input type="button" value="Send" onclick="sendCommand()">
+    <input type="button" value="Restart CMD" onclick="restartCmd()">
+    <input type="button" value="Refresh CMD" onclick="refreshCmd()">
+  </div>
+  <div class="menu">
+    <a href="/admin/clients">Client List</a> |
+    <a href="/admin/screenshot?clientid=" id="screenshotLink">Screenshot</a>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const clientId = urlParams.get("clientid");
+    if (!clientId) alert("Missing clientid parameter");
+    document.getElementById("pageTitle").innerText += clientId;
+    document.getElementById("screenshotLink").href = "/admin/screenshot?clientid=" + encodeURIComponent(clientId);
+
+    function fetchCmdPage() {
+      fetch(`/api/admin/cmd?clientid=${encodeURIComponent(clientId)}`, {
+        credentials: 'include'
+      })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        if (data.status==="success" && data.data.cmd_page!==undefined) {
+          document.getElementById("cmd_output").innerText = data.data.cmd_page;
+        } else {
+          document.getElementById("cmd_output").innerText = "错误：" + data.message;
+        }
+      })
+      .catch(e => {
+        document.getElementById("cmd_output").innerText = "Fetch error: " + e;
+      });
+    }
+    setInterval(fetchCmdPage, 1000);
+
+    function sendCommand() {
+      const cmd = document.getElementById("cmd_input").value;
+      if (!cmd) return;
+      fetch('/api/admin/cmd', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: clientId, command: cmd })
+      })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        if (data.status==="success") {
+          document.getElementById("cmd_input").value = "";
+          fetchCmdPage();
+        } else {
+          alert("命令发送失败：" + data.message);
+        }
+      })
+      .catch(e => alert("命令发送异常：" + e));
+    }
+
+    function restartCmd() {
+      fetch('/api/admin/cmd', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: clientId, name: 'restart_cmd'})
+      })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        if (data.status==="success") alert("CMD 重启指令已发送");
+        else alert("重启指令发送失败：" + data.message);
+      })
+      .catch(e => alert("重启指令发送异常：" + e));
+    }
+
+    function refreshCmd() {
+      fetch('/api/admin/cmd/refresh', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: clientId })
+      })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        if (data.status==="success") {
+          alert("Refresh command sent.");
+          fetchCmdPage();
+        } else {
+          alert("Refresh command failed: " + data.message);
+        }
+      })
+      .catch(e => alert("Refresh command error: " + e));
+    }
+  </script>
+</body>
+</html>

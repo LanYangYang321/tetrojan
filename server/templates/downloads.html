@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Download Queue</title>
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { text-align: center; }
+    table { width: 90%; margin: 20px auto; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #f4f4f4; }
+    .btn { padding: 4px 8px; }
+    .status-pending { color: orange; }
+    .status-in_progress { color: blue; }
+    .status-ready { color: green; }
+    .status-failed { color: red; }
+  </style>
+</head>
+<body>
+  <h1>Download Queue</h1>
+  <div style="text-align:center; margin-bottom: 20px;">
+    <a href="/admin/clients" class="btn">← 返回客户端列表</a>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Client ID</th>
+        <th>Path</th>
+        <th>Added At</th>
+        <th>Ready At</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="task-list">
+      <tr><td colspan="6">加载中...</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    function fetchTasks() {
+      fetch('/api/admin/download/list', { credentials: 'include' })
+        .then(r => {
+          if (!r.ok) throw new Error(r.status);
+          return r.json();
+        })
+        .then(data => {
+          const tbody = document.getElementById('task-list');
+          if (data.status !== 'success') {
+            tbody.innerHTML = `<tr><td colspan="6">错误：${data.message}</td></tr>`;
+            return;
+          }
+          const tasks = data.tasks;
+          if (!tasks.length) {
+            tbody.innerHTML = `<tr><td colspan="6">暂无下载任务</td></tr>`;
+            return;
+          }
+          let html = '';
+          tasks.forEach(t => {
+            const cls = `status-${t.status.replace(/ /g, '_')}`;
+            html += `<tr>
+              <td>${t.client_id}</td>
+              <td title="${t.path}">${t.path}</td>
+              <td>${t.added_at}</td>
+              <td>${t.ready_at || '-'}</td>
+              <td class="${cls}">${t.status}</td>
+              <td>`;
+            if (t.status === 'ready') {
+              html += `<a class="btn" href="${t.download_url}" download>下载</a>`;
+            } else {
+              html += `<span>${t.status}</span>`;
+            }
+            html += `</td></tr>`;
+          });
+          tbody.innerHTML = html;
+        })
+        .catch(e => {
+          document.getElementById('task-list').innerHTML =
+            `<tr><td colspan="6">请求失败：${e.message}</td></tr>`;
+        });
+    }
+
+    // 页面加载后获取一次，并每 5 秒刷新
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchTasks();
+      setInterval(fetchTasks, 5000);
+    });
+  </script>
+</body>
+</html>

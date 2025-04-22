@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Directory Explorer</title>
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #breadcrumb { margin-bottom: 10px; }
+    #breadcrumb a { cursor: pointer; color: #337ab7; text-decoration: none; }
+    #breadcrumb a:not(:last-child)::after { content: " / "; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border: 1px solid #ddd; }
+    tr:hover { background: #f1f1f1; }
+    .folder { font-weight: bold; cursor: pointer; }
+    .file { color: #555; }
+    .size { text-align: right; color: #888; }
+    .action-btn { padding: 4px 8px; }
+  </style>
+</head>
+<body>
+  <h1>Directory Explorer</h1>
+  <div style="text-align:center; margin-bottom: 20px;">
+    <a href="/admin/clients" class="btn">← 返回客户端列表</a>
+  </div>
+  <div id="breadcrumb"></div>
+
+  <div class="controls" style="margin: 10px 0;">
+    <!-- 创建目录 -->
+    <input type="text" id="newDirName" placeholder="新建文件夹名称" />
+    <button id="mkdirBtn">创建文件夹</button>
+
+    <!-- 上传文件 -->
+    <input type="file" id="uploadFileInput" />
+    <button id="uploadFileBtn">上传文件</button>
+  </div>
+
+  <div style="text-align:center; margin-bottom: 20px;">
+    <a href="/admin/uploads" class="btn">上传文件查看结果</a>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Size</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="file-list">
+      <tr><td colspan="4">加载中...</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const clientId = urlParams.get('clientid');
+    if (!clientId) {
+      alert('URL 缺少 clientid 参数');
+      throw '';
+    }
+
+    let currentPath = urlParams.get('path') || '';
+
+    function updateUrl() {
+      const newUrl = `?clientid=${encodeURIComponent(clientId)}&path=${encodeURIComponent(currentPath)}`;
+      window.history.pushState(null, '', newUrl);
+    }
+
+    function updateBreadcrumb() {
+      const container = document.getElementById('breadcrumb');
+      container.innerHTML = '';
+
+      const rootLink = document.createElement('a');
+      rootLink.innerText = '根';
+      rootLink.onclick = () => {
+        currentPath = '';
+        loadDir();
+      };
+      container.appendChild(rootLink);
+
+      if (!currentPath) return;
+
+      const parts = currentPath.replace(/\\/g, '/').split('/');
+      let accum = '';
+      parts.forEach((part, idx) => {
+        if (!part) return;
+        accum += (idx === 0 ? '' : '/') + part;
+        const a = document.createElement('a');
+        a.innerText = part;
+        a.onclick = () => {
+          currentPath = accum;
+          loadDir();
+        };
+        container.appendChild(a);
+      });
+    }
+
+    // 新增：加入下载队列
+    function addDownload(path) {
+      fetch('/api/admin/download/request', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: clientId, path: path })
+      })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        if (data.status === 'ok') {
+          alert(`已加入下载队列：${path}`);
+        } else {
+          alert(`加入下载队列失败：${data.message}`);
+        }
+      })
+      .catch(e => {
+        alert(`请求失败：${e}`);
+      });
+    }
+
+    function loadDir() {
+      updateBreadcrumb();
+      updateUrl();
+
+      const tbody = document.getElementById('file-list');
+      tbody.innerHTML = '<tr><td colspan="4">加载中...</td></tr>';
+
+      fetch(`/api/admin/dir?clientid=${encodeURIComponent(clientId)}&path=${encodeURIComponent(currentPath)}`, {
+        credentials: 'include'
+      })
+      .then(r => {
+        if (!r.ok) throw new Error(r.status);
+        return r.json();
+      })
+      .then(resp => {
+        if (resp.status !== 'success') throw new Error(resp.message);
+        const files = resp.data.files;
+        const rows = [];
+
+        if (currentPath) {
+          rows.push({
+            name: '..', is_dir: true, size: '', onclick: () => {
+              const arr = currentPath.replace(/\\/g, '/').split('/');
+              arr.pop();
+              currentPath = arr.join('/');
+              loadDir();
+            }
+          });
+        }
+
+        files.forEach(f => {
+          rows.push({
+            name: f.name,
+            is_dir: f.is_dir,
+            size: f.size || '',
+            onclick: () => {
+              if (f.is_dir) {
+                const sep = currentPath && !currentPath.endsWith('/') ? '/' : '';
+                currentPath = currentPath + sep + f.name;
+                loadDir();
+              }
+            }
+          });
+        });
+
+        tbody.innerHTML = '';
+        rows.forEach(r => {
+          const tr = document.createElement('tr');
+          const fullPath = currentPath
+            ? currentPath + (currentPath.endsWith('/') ? '' : '/') + r.name
+            : r.name;
+
+          // 名称
+          const tdName = document.createElement('td');
+          tdName.innerText = r.name;
+          tdName.className = r.is_dir ? 'folder' : 'file';
+          if (r.is_dir) tdName.onclick = r.onclick;
+          tr.appendChild(tdName);
+
+          // 类型
+          const tdType = document.createElement('td');
+          tdType.innerText = r.is_dir ? 'Folder' : 'File';
+          tr.appendChild(tdType);
+
+          // 大小
+          const tdSize = document.createElement('td');
+          tdSize.innerText = r.size;
+          tdSize.className = 'size';
+          tr.appendChild(tdSize);
+
+          // 操作
+          const tdAction = document.createElement('td');
+          if (!r.is_dir) {
+            // 下载按钮
+            const dlBtn = document.createElement('button');
+            dlBtn.innerText = '加入下载队列';
+            dlBtn.className = 'action-btn';
+            dlBtn.onclick = () => addDownload(fullPath);
+            tdAction.appendChild(dlBtn);
+          }
+          // 删除按钮（文件或文件夹都可删）
+          const delBtn = document.createElement('button');
+          delBtn.innerText = '删除';
+          delBtn.className = 'action-btn';
+          delBtn.onclick = () => deleteItem(fullPath);
+          tdAction.appendChild(delBtn);
+
+          tr.appendChild(tdAction);
+
+          tbody.appendChild(tr);
+        });
+      })
+      .catch(err => {
+        tbody.innerHTML = `<tr><td colspan="4">Error: ${err.message}</td></tr>`;
+      });
+    }
+
+    loadDir();
+        // 创建目录
+    document.getElementById('mkdirBtn').onclick = () => {
+      const name = document.getElementById('newDirName').value.trim();
+      if (!name) return alert('请输入文件夹名称');
+      fetch('/api/admin/mkdir', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          client_id: clientId,
+          parent_path: currentPath,
+          new_dir_name: name
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          alert('创建命令已下发');
+          loadDir();
+        } else {
+          alert('创建失败：' + data.message);
+        }
+      });
+    };
+
+    // 上传文件
+    document.getElementById('uploadFileBtn').onclick = () => {
+      const input = document.getElementById('uploadFileInput');
+      if (!input.files.length) return alert('请选择文件');
+      const file = input.files[0];
+      const form = new FormData();
+      form.append('client_id', clientId);
+      form.append('target_dir', currentPath);
+      form.append('file', file);
+      fetch('/api/admin/upload/request', {
+        method: 'POST',
+        credentials: 'include',
+        body: form
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          alert('上传命令已下发');
+          input.value = '';
+        } else {
+          alert('上传失败：' + data.message);
+        }
+      });
+    };
+
+    // 删除文件/文件夹
+    function deleteItem(path) {
+      if (!confirm('确定删除 ' + path + ' 吗？')) return;
+      fetch('/api/admin/delete', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ client_id: clientId, target_path: path })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          alert('删除命令已下发');
+          loadDir();
+        } else {
+          alert('删除失败：' + data.message);
+        }
+      });
+    }
+    document.getElementById('upload-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const fileInput = this.elements.file;
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('client_id', clientId);
+    formData.append('target_dir', currentPath || '/');
+    formData.append('file', file);
+
+    fetch('/api/admin/upload/request', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include'
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        if (data.status === 'ok') {
+          alert('上传任务已创建，客户端稍后将接收');
+          loadDir();  // 可选：刷新目录
+          fileInput.value = ''; // 清空
+        } else {
+          alert('上传失败: ' + data.message);
+        }
+      })
+      .catch(e => {
+        alert('请求失败: ' + e);
+      });
+  });
+  </script>
+</body>
+</html>
