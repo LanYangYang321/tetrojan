@@ -48,7 +48,7 @@ pip install -r requirements.txt
 3. 启动服务端（监听控制端）：
 
 ```bash
-python app.py
+python main.py
 ```
 
 ## 证书:
