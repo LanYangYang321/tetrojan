@@ -157,11 +157,6 @@ def api_login():
 
 
 # ================================ 管理路由 ================================
-@app.route('/login', methods=['GET'])
-def login():
-    return send_from_directory('templates', 'login.html')
-
-
 @app.route('/admin/clients')
 @auth_required
 def admin_clients():
