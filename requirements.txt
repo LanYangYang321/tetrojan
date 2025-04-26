@@ -2,4 +2,3 @@ Flask==1.1.2
 flask_sock==0.7.0
 gevent==24.11.1
 Werkzeug==2.0.2
-~event==24.11.1
