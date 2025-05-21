@@ -46,7 +46,7 @@ class MovingAverageCrossoverStrategy(BaseStrategy):
 
     def generate_signals(self, market_data: pd.DataFrame) -> pd.DataFrame:
         # Placeholder: Implement actual signal generation later
-        print(f"[{self.strategy_name}] generating signals with data:\n{market_data.head()}")
+        print(f"策略 [{self.strategy_name}] 正在使用以下数据生成信号:\n{market_data.head()}")
         # Example: signals_df = pd.DataFrame(index=market_data.index)
         # signals_df['signal'] = 0 # 0: hold, 1: buy, -1: sell
         return pd.DataFrame()
@@ -61,7 +61,7 @@ class ChannelBreakoutStrategy(BaseStrategy):
 
     def generate_signals(self, market_data: pd.DataFrame) -> pd.DataFrame:
         # Placeholder: Implement actual signal generation later
-        print(f"[{self.strategy_name}] generating signals with data:\n{market_data.head()}")
+        print(f"策略 [{self.strategy_name}] 正在使用以下数据生成信号:\n{market_data.head()}")
         return pd.DataFrame()
 
 class BollingerBandsMeanReversionStrategy(BaseStrategy):
@@ -74,7 +74,7 @@ class BollingerBandsMeanReversionStrategy(BaseStrategy):
 
     def generate_signals(self, market_data: pd.DataFrame) -> pd.DataFrame:
         # Placeholder: Implement actual signal generation later
-        print(f"[{self.strategy_name}] generating signals with data:\n{market_data.head()}")
+        print(f"策略 [{self.strategy_name}] 正在使用以下数据生成信号:\n{market_data.head()}")
         return pd.DataFrame()
 
 class GridTradingStrategy(BaseStrategy):
@@ -87,5 +87,5 @@ class GridTradingStrategy(BaseStrategy):
 
     def generate_signals(self, market_data: pd.DataFrame) -> pd.DataFrame:
         # Placeholder: Implement actual signal generation later
-        print(f"[{self.strategy_name}] generating signals with data:\n{market_data.head()}")
+        print(f"策略 [{self.strategy_name}] 正在使用以下数据生成信号:\n{market_data.head()}")
         return pd.DataFrame()

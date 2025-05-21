@@ -32,7 +32,7 @@ def choose_strategy(market_state_info: dict, strategy_configs: dict) -> BaseStra
     market_state = market_state_info.get("market_state")
     confidence = market_state_info.get("confidence", 0.0)
     
-    print(f"Strategy Scheduler: Choosing strategy for market state '{market_state}' with confidence {confidence:.2f}")
+    print(f"策略调度器：正在为市场状态 '{market_state}' (置信度 {confidence:.2f}) 选择策略")
 
     chosen_strategy_instance = None
 
@@ -46,28 +46,28 @@ def choose_strategy(market_state_info: dict, strategy_configs: dict) -> BaseStra
         # Could also randomly pick between trend strategies or use a more specific rule
         config = strategy_configs.get("MovingAverageCrossover", {})
         chosen_strategy_instance = MovingAverageCrossoverStrategy(config=config)
-        print(f"Selected Trend strategy: {chosen_strategy_instance.strategy_name} with config: {config}")
+        print(f"已选择趋势策略：{chosen_strategy_instance.strategy_name}，配置：{config}")
         # As an alternative, one could also pick ChannelBreakout for Trend
         # config_cb = strategy_configs.get("ChannelBreakout", {})
         # chosen_strategy_instance = ChannelBreakoutStrategy(config=config_cb)
-        # print(f"Selected Trend strategy: {chosen_strategy_instance.strategy_name} with config: {config_cb}")
+        # print(f"已选择趋势策略：{chosen_strategy_instance.strategy_name}，配置：{config_cb}")
 
     elif market_state == "Range":
         # Example: Prioritize BollingerBandsMeanReversion for Range
         config = strategy_configs.get("BollingerBandsMeanReversion", {})
         chosen_strategy_instance = BollingerBandsMeanReversionStrategy(config=config)
-        print(f"Selected Range strategy: {chosen_strategy_instance.strategy_name} with config: {config}")
+        print(f"已选择震荡策略：{chosen_strategy_instance.strategy_name}，配置：{config}")
         # As an alternative, one could also pick GridTrading for Range
         # config_gt = strategy_configs.get("GridTrading", {})
         # chosen_strategy_instance = GridTradingStrategy(config=config_gt)
-        # print(f"Selected Range strategy: {chosen_strategy_instance.strategy_name} with config: {config_gt}")
+        # print(f"已选择震荡策略：{chosen_strategy_instance.strategy_name}，配置：{config_gt}")
     else:
-        print(f"Warning: Unknown market state '{market_state}'. No strategy selected.")
+        print(f"警告：未知的市场状态 '{market_state}'。未选择任何策略。")
         # Optionally, define a default strategy or return None
         return None
 
     if chosen_strategy_instance:
-        print(f"Strategy chosen: {chosen_strategy_instance.strategy_name}")
+        print(f"已选定策略：{chosen_strategy_instance.strategy_name}")
     
     return chosen_strategy_instance
 
@@ -80,42 +80,42 @@ if __name__ == '__main__':
         "GridTrading": {"levels": 5, "width": 0.01, "description": "Range Grid"}
     }
 
-    print("--- Test Case 1: Market State 'Trend' ---")
+    print("--- 测试用例1：市场状态 'Trend' ---")
     llm_output_trend = {"market_state": "Trend", "confidence": 0.80, "details": "Strong uptrend identified"}
     selected_strategy_trend = choose_strategy(llm_output_trend, mock_strategy_configs)
     if selected_strategy_trend:
-        print(f"Main Test: Selected strategy for Trend: {selected_strategy_trend.strategy_name}, Config: {selected_strategy_trend.get_config()}")
+        print(f"主测试：为'Trend'选择的策略：{selected_strategy_trend.strategy_name}，配置：{selected_strategy_trend.get_config()}")
         # Test generating signals (will be placeholder)
         import pandas as pd # Import pandas here for the test block
         mock_market_data = pd.DataFrame({'close': [10,11,12,13,14,15]}) # Minimal data for placeholder
         selected_strategy_trend.generate_signals(mock_market_data)
     print("\n")
 
-    print("--- Test Case 2: Market State 'Range' ---")
+    print("--- 测试用例2：市场状态 'Range' ---")
     llm_output_range = {"market_state": "Range", "confidence": 0.75, "details": "Sideways movement in a narrow band"}
     selected_strategy_range = choose_strategy(llm_output_range, mock_strategy_configs)
     if selected_strategy_range:
-        print(f"Main Test: Selected strategy for Range: {selected_strategy_range.strategy_name}, Config: {selected_strategy_range.get_config()}")
+        print(f"主测试：为'Range'选择的策略：{selected_strategy_range.strategy_name}，配置：{selected_strategy_range.get_config()}")
         import pandas as pd # Import pandas here for the test block
         mock_market_data = pd.DataFrame({'close': [12,12.1,11.9,12.05,11.95,12]}) # Minimal data
         selected_strategy_range.generate_signals(mock_market_data)
     print("\n")
 
-    print("--- Test Case 3: Market State 'Unknown' ---")
+    print("--- 测试用例3：市场状态 'Unknown' ---")
     llm_output_unknown = {"market_state": "Consolidating", "confidence": 0.60, "details": "Price is undecided"}
     selected_strategy_unknown = choose_strategy(llm_output_unknown, mock_strategy_configs)
     if selected_strategy_unknown:
-        print(f"Main Test: Selected strategy for Unknown: {selected_strategy_unknown.strategy_name}")
+        print(f"Main Test: Selected strategy for Unknown: {selected_strategy_unknown.strategy_name}") # This line likely won't be hit with current logic
     else:
-        print("Main Test: No strategy selected for Unknown state, as expected.")
+        print("主测试：未为'Unknown'状态选择策略，符合预期。")
     print("\n")
     
-    print("--- Test Case 4: Market State 'Trend' but config missing for primary choice ---")
+    print("--- 测试用例4：市场状态 'Trend' 但首选策略配置缺失 ---")
     # To test fallback or error handling if primary chosen strategy config is missing
     # Current choose_strategy will use {} if config is missing.
     current_trend_config = mock_strategy_configs.pop("MovingAverageCrossover", None) # Remove temporarily
     selected_strategy_trend_no_config = choose_strategy(llm_output_trend, mock_strategy_configs)
     if selected_strategy_trend_no_config:
-         print(f"Main Test: Selected strategy for Trend (no specific MA config): {selected_strategy_trend_no_config.strategy_name}, Config: {selected_strategy_trend_no_config.get_config()}")
+         print(f"主测试：为'Trend'选择的策略（无特定MA配置）：{selected_strategy_trend_no_config.strategy_name}，配置：{selected_strategy_trend_no_config.get_config()}")
     if current_trend_config: mock_strategy_configs["MovingAverageCrossover"] = current_trend_config # Add back
     print("\n")

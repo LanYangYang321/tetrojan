@@ -101,23 +101,23 @@ def get_risk_configs() -> dict:
 # Example of how to access configurations (for documentation/testing)
 # -----------------------------------------------------------------------------
 if __name__ == '__main__':
-    print("--- Main Loop Config ---")
+    print("--- 主循环配置 ---")
     main_cfg = get_main_loop_config()
     print(main_cfg)
 
-    print("\n--- Strategy Configs ---")
+    print("\n--- 策略配置 ---")
     strat_cfgs = get_strategy_configs()
     for name, params in strat_cfgs.items():
-        print(f"Strategy: {name}, Params: {params}")
+        print(f"策略: {name}, 参数: {params}")
 
-    print("\n--- Trade Executor Config ---")
+    print("\n--- 交易执行器配置 ---")
     exec_cfg = get_trade_executor_config()
     print(exec_cfg)
 
-    print("\n--- Risk Configs ---")
+    print("\n--- 风险配置 ---")
     risk_cfg = get_risk_configs()
     print(risk_cfg)
     
-    print(f"\nExample Access: MA Crossover Short Window -> {strat_cfgs['MovingAverageCrossover']['short_window']}")
-    print(f"Example Access: Default Max Order Size -> {risk_cfg['max_order_sizes']['default']}")
-    print(f"Example Access: Trading Symbol -> {main_cfg['trading_symbol']}")
+    print(f"\n访问示例: 移动平均线交叉策略 短窗口 -> {strat_cfgs['MovingAverageCrossover']['short_window']}")
+    print(f"访问示例: 默认最大订单大小 -> {risk_cfg['max_order_sizes']['default']}")
+    print(f"访问示例: 交易符号 -> {main_cfg['trading_symbol']}")

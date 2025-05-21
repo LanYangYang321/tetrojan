@@ -18,9 +18,9 @@ def get_market_state(market_data: pd.DataFrame, llm_config: dict = None) -> dict
               Example: {"market_state": "Trend", "confidence": 0.85, "details": "Uptrend identified"}
                        {"market_state": "Range", "confidence": 0.70, "details": "Sideways movement observed"}
     """
-    print(f"LLM Interface: Received market data with {len(market_data)} rows. Last close: {market_data['close'].iloc[-1] if not market_data.empty else 'N/A'}")
+    print(f"LLM接口：收到包含 {len(market_data)} 行的市场数据。最新收盘价: {market_data['close'].iloc[-1] if not market_data.empty else '无'}")
     if llm_config:
-        print(f"LLM Config: {llm_config}")
+        print(f"LLM 配置: {llm_config}")
 
     # --- Mock LLM Logic ---
     # In a real implementation, this would involve:
@@ -46,22 +46,22 @@ def get_market_state(market_data: pd.DataFrame, llm_config: dict = None) -> dict
         if abs(price_change_percentage) > 0.02: # If price changed by more than 2% in last 10 periods
             if price_change_percentage > 0:
                 chosen_state = "Trend"
-                details = "Uptrend identified due to recent significant price increase."
+                details = "近期价格显著上涨，判断为上升趋势。"
             else:
                 chosen_state = "Trend"
-                details = "Downtrend identified due to recent significant price decrease."
+                details = "近期价格显著下跌，判断为下降趋势。"
         else:
             chosen_state = "Range"
-            details = "Range-bound market identified due to low price volatility."
+            details = "价格波动较小，判断为震荡市场。"
     else:
         # Not enough data, rely on random choice
         if chosen_state == "Trend":
-            details = "Trend (randomly chosen due to insufficient data)."
+            details = "趋势（数据不足，随机选择）。"
         else:
-            details = "Range (randomly chosen due to insufficient data)."
+            details = "震荡（数据不足，随机选择）。"
 
 
-    print(f"LLM Simulation: Market State -> {chosen_state}, Confidence -> {confidence}, Details -> {details}")
+    print(f"LLM模拟：市场状态 -> {chosen_state}, 置信度 -> {confidence}, 详情 -> {details}")
     
     return {
         "market_state": chosen_state, # "Trend" or "Range"
@@ -74,13 +74,13 @@ if __name__ == '__main__':
     # This import should be here for the __main__ block
     from trading_bot.data_collector import fetch_mock_ohlcv_data
     
-    print("--- Test Case 1: Default Mock Data (likely Range or random) ---")
+    print("--- 测试用例1：默认模拟数据（可能为震荡或随机）---")
     mock_data_1 = fetch_mock_ohlcv_data('BTC/USDT', limit=20)
     market_state_1 = get_market_state(mock_data_1)
-    print(f"Returned Market State 1: {market_state_1}")
+    print(f"返回的市场状态1: {market_state_1}")
     print("\n")
 
-    print("--- Test Case 2: Simulating a Strong Uptrend ---")
+    print("--- 测试用例2：模拟强势上涨趋势 ---")
     mock_data_uptrend = fetch_mock_ohlcv_data('ETH/USDT', limit=20)
     # Manually adjust close prices to show a clear uptrend for the last 10 periods
     if not mock_data_uptrend.empty and len(mock_data_uptrend) >= 11:
@@ -93,10 +93,10 @@ if __name__ == '__main__':
         for i in range(1, 12): # Adjusts points from iloc[-11] up to iloc[-1]
             mock_data_uptrend.loc[mock_data_uptrend.index[-i], 'close'] = base_price_for_trend * (1 + 0.005 * (12-i))
     market_state_uptrend = get_market_state(mock_data_uptrend)
-    print(f"Returned Market State (Uptrend): {market_state_uptrend}")
+    print(f"返回的市场状态（上涨趋势）: {market_state_uptrend}")
     print("\n")
 
-    print("--- Test Case 3: Simulating a Strong Downtrend ---")
+    print("--- 测试用例3：模拟强势下跌趋势 ---")
     mock_data_downtrend = fetch_mock_ohlcv_data('SOL/USDT', limit=20)
     # Manually adjust close prices to show a clear downtrend
     if not mock_data_downtrend.empty and len(mock_data_downtrend) >= 11:
@@ -105,13 +105,13 @@ if __name__ == '__main__':
         for i in range(1, 12): # Adjusts points from iloc[-11] up to iloc[-1]
             mock_data_downtrend.loc[mock_data_downtrend.index[-i], 'close'] = base_price_for_trend * (1 - 0.005 * (12-i))
     market_state_downtrend = get_market_state(mock_data_downtrend)
-    print(f"Returned Market State (Downtrend): {market_state_downtrend}")
+    print(f"返回的市场状态（下跌趋势）: {market_state_downtrend}")
     print("\n")
     
-    print("--- Test Case 4: Empty DataFrame ---")
+    print("--- 测试用例4：空DataFrame ---")
     empty_df = pd.DataFrame(columns=['open', 'high', 'low', 'close', 'volume']) # Ensure columns exist for iloc access
     market_state_empty = get_market_state(empty_df)
-    print(f"Returned Market State (Empty Data): {market_state_empty}")
+    print(f"返回的市场状态（空数据）: {market_state_empty}")
 
     print("--- Test Case 5: Dataframe with less than 11 rows ---")
     mock_data_short = fetch_mock_ohlcv_data('ADA/USDT', limit=5)

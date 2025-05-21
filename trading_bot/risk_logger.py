@@ -31,7 +31,7 @@ def setup_logger(log_file_name: str = "trading_bot.log",
     logger.addHandler(fh)
     logger.addHandler(ch)
     
-    logger.info("Logger setup complete.")
+    logger.info("日志记录器设置完成。")
     return logger
 
 # Initialize a global logger instance for the bot to use
@@ -46,9 +46,9 @@ def check_max_order_size(symbol: str, quantity: float, max_size_config: dict) ->
     """
     max_allowed = max_size_config.get(symbol, max_size_config.get("default", float('inf')))
     if quantity > max_allowed:
-        BOT_LOGGER.warning(f"Risk Check: Order quantity {quantity} for {symbol} exceeds max allowed {max_allowed}.")
+        BOT_LOGGER.warning(f"风险检查：订单数量 {quantity} (交易对 {symbol}) 超出最大允许值 {max_allowed}。")
         return False
-    BOT_LOGGER.info(f"Risk Check: Order quantity {quantity} for {symbol} is within max allowed {max_allowed}.")
+    BOT_LOGGER.info(f"风险检查：订单数量 {quantity} (交易对 {symbol}) 在最大允许值 {max_allowed} 内。")
     return True
 
 def check_overall_portfolio_exposure(current_positions: dict, max_total_exposure_usd: float) -> bool:
@@ -66,9 +66,9 @@ def check_overall_portfolio_exposure(current_positions: dict, max_total_exposure
         # total_usd_value += pos_details.get("quantity", 0) * get_current_price(symbol) 
 
     if total_usd_value > max_total_exposure_usd:
-        BOT_LOGGER.warning(f"Risk Check: Total portfolio exposure {total_usd_value:.2f} USD exceeds max allowed {max_total_exposure_usd:.2f} USD.")
+        BOT_LOGGER.warning(f"风险检查：总投资组合风险暴露 {total_usd_value:.2f} USD 超出最大允许值 {max_total_exposure_usd:.2f} USD。")
         return False
-    BOT_LOGGER.info(f"Risk Check: Total portfolio exposure {total_usd_value:.2f} USD is within max allowed {max_total_exposure_usd:.2f} USD.")
+    BOT_LOGGER.info(f"风险检查：总投资组合风险暴露 {total_usd_value:.2f} USD 在最大允许值 {max_total_exposure_usd:.2f} USD 内。")
     return True
 
 def handle_exchange_error(error_payload: dict, context: str = "General Exchange Interaction"):
@@ -76,7 +76,7 @@ def handle_exchange_error(error_payload: dict, context: str = "General Exchange 
     Placeholder: Logs exchange errors.
     In a real system, this might trigger alerts or specific recovery logic.
     """
-    BOT_LOGGER.error(f"Exchange Error in {context}: {error_payload}")
+    BOT_LOGGER.error(f"交易所错误发生在 {context}: {error_payload}")
     # Example: Send an alert, try to gracefully handle the error, etc.
 
 # Add more risk checks as needed, e.g.:
@@ -85,17 +85,17 @@ def handle_exchange_error(error_payload: dict, context: str = "General Exchange 
 # - API error rate limits
 
 if __name__ == '__main__':
-    BOT_LOGGER.info("Starting Risk/Logger Module Test...")
+    BOT_LOGGER.info("开始风险/日志模块测试...")
 
     # Test basic logging
-    BOT_LOGGER.debug("This is a debug message.") # Will not show if log_level is INFO
-    BOT_LOGGER.info("This is an info message.")
-    BOT_LOGGER.warning("This is a warning message.")
-    BOT_LOGGER.error("This is an error message.")
-    BOT_LOGGER.critical("This is a critical message.")
+    BOT_LOGGER.debug("这是一条调试信息。") # Will not show if log_level is INFO
+    BOT_LOGGER.info("这是一条普通信息。")
+    BOT_LOGGER.warning("这是一条警告信息。")
+    BOT_LOGGER.error("这是一条错误信息。")
+    BOT_LOGGER.critical("这是一条严重错误信息。")
 
     # Test risk functions
-    print("\n--- Testing Risk Functions ---")
+    print("\n--- 测试风险函数 ---")
     max_order_sizes = {"BTC/USDT": 0.5, "ETH/USDT": 5, "default": 0.1}
     check_max_order_size("BTC/USDT", 0.2, max_order_sizes) # Should pass
     check_max_order_size("BTC/USDT", 0.7, max_order_sizes) # Should fail
@@ -112,6 +112,6 @@ if __name__ == '__main__':
     mock_api_error = {"code": -1001, "msg": "Internal error.", "timestamp": datetime.datetime.now().isoformat()}
     handle_exchange_error(mock_api_error, context="Simulated Order Submission")
     
-    BOT_LOGGER.info("Risk/Logger Module Test Finished.")
+    BOT_LOGGER.info("风险/日志模块测试完成。")
     # To see DEBUG messages in the file, you could temporarily change log_level in setup_logger
     # e.g., BOT_LOGGER = setup_logger(log_level=logging.DEBUG) and re-run.

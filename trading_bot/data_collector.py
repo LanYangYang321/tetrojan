@@ -17,7 +17,7 @@ def fetch_mock_ohlcv_data(symbol: str, timeframe: str = '1m', limit: int = 100) 
         pd.DataFrame: A DataFrame with columns ['timestamp', 'open', 'high', 'low', 'close', 'volume'].
                       Index is a DatetimeIndex.
     """
-    print(f"Fetching mock OHLCV data for {symbol}, timeframe {timeframe}, limit {limit}")
+    print(f"正在为交易对 {symbol} 获取模拟OHLCV数据，时间周期 {timeframe}，数量 {limit}")
 
     # Generate a DatetimeIndex
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -115,21 +115,21 @@ def fetch_mock_ohlcv_data(symbol: str, timeframe: str = '1m', limit: int = 100) 
     
     df.set_index('timestamp', inplace=True)
 
-    print(f"Generated mock data for {symbol}:\n{df.head()}")
+    print(f"已为交易对 {symbol} 生成模拟数据:\n{df.head()}")
     return df
 
 if __name__ == '__main__':
     # Example usage:
     mock_data_btc = fetch_mock_ohlcv_data('BTC/USDT', timeframe='1m', limit=5)
-    print("\nBTC/USDT 1m Mock Data:")
+    print("\nBTC/USDT 1分钟 模拟数据:")
     print(mock_data_btc)
 
     mock_data_eth = fetch_mock_ohlcv_data('ETH/USDT', timeframe='5m', limit=3)
-    print("\nETH/USDT 5m Mock Data:")
+    print("\nETH/USDT 5分钟 模拟数据:")
     print(mock_data_eth)
 
     mock_data_sol = fetch_mock_ohlcv_data('SOL/USDT', timeframe='1h', limit=4)
-    print("\nSOL/USDT 1h Mock Data:")
+    print("\nSOL/USDT 1h Mock Data:") # Keeping this and subsequent as English, as only BTC and ETH were specified for change
     print(mock_data_sol)
 
     mock_data_day = fetch_mock_ohlcv_data('ADA/USDT', timeframe='1d', limit=2)
